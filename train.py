@@ -59,11 +59,15 @@ def build_preprocessor(num_cols: list[str]) -> ColumnTransformer:
         ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
     except TypeError:
         ohe = OneHotEncoder(handle_unknown="ignore", sparse=False)
-    return ColumnTransformer(
+    ct = ColumnTransformer(
         [("num", "passthrough", num_cols), ("cat", ohe, CAT_COLS)],
         remainder="drop",
         verbose_feature_names_out=False,
     )
+    # Avoid "X does not have valid feature names" on predict when using LGBM/sklearn API.
+    if hasattr(ct, "set_output"):
+        ct.set_output(transform="pandas")
+    return ct
 
 
 def train_xgb(
